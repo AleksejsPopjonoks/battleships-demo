@@ -1,0 +1,67 @@
+/**
+VARIABLES
+ */
+
+$cell_bg: #09566f;
+$cell_border: #307f9b;
+$cell_bg_hit: #084960;
+
+$ship_bg: #1B8CB6;
+$ship_border: #22c8ff;
+$ship_hit: #307f9b;
+
+$button_bg: #ff9c2c;
+
+
+/**
+MIXINS
+ */
+
+@mixin transform($transforms...) {
+	-webkit-transform: $transforms;
+	transform: $transforms;
+}
+
+@mixin translate3d ($x, $y, $z...) {
+	@include transform(translate3d($x, $y, $z));
+}
+
+@mixin scale3d($scale...) {
+	@include transform(scale3d($scale));
+}
+
+@mixin rotate ($deg) {
+	@include transform(rotate(#{$deg}deg));
+}
+
+@mixin transform-origin ($origin) {
+	-webkit-transform-origin: $origin;
+	transform-origin: $origin;
+}
+
+@mixin transition($transition...) {
+	$prefixes: ("-webkit-", "");
+	@each $prefix in $prefixes {
+		#{$prefix}transition: $transition;
+	}
+}
+
+@mixin keyframes($animationName) {
+	@-webkit-keyframes #{$animationName} {
+		@content;
+	}
+	@-moz-keyframes #{$animationName}  {
+		@content;
+	}
+	@-o-keyframes #{$animationName} {
+		@content;
+	}
+	@keyframes #{$animationName} {
+		@content;
+	}
+}
+
+@mixin animation($animation...) {
+	-webkit-animation: $animation;
+	animation: $animation;
+}
