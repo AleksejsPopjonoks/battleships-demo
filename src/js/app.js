@@ -216,6 +216,7 @@
 		cells = JSON.parse(JSON.stringify(defCells));
 		availableCells = totalCells;
 		shipsAlive = Object.keys(ships).length;
+		shots = 0;
 		$('#board').find('.cell').removeClass('hit');
 		$('#fired, #left').text('');
 		switchStatus(false);
