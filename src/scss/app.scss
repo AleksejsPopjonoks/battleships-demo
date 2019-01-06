@@ -79,9 +79,9 @@ body {
 				}
 			}
 
-			&[data-type="I"],
-			&[data-type="L"],
-			&[data-type="D"] {
+			&[data-type^="I"],
+			&[data-type^="L"],
+			&[data-type^="D"] {
 				background-color: lighten($cell_bg, 5%);
 				box-shadow: inset 0 0 0 1px transparentize($cell_border, 0.8);
 

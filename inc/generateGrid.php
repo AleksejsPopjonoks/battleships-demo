@@ -7,8 +7,6 @@ class Battleships {
 	 */
 	const SIZE = 10;
 	const WATER = 0;
-	const HIT = 1;
-	const SUNK = 2;
 
 
 	/**
@@ -17,15 +15,19 @@ class Battleships {
 	const SHIPS = array(
 		'I' => array(
 			'cells' => 4,
-		    'count' => 1
+			'count' => 1
 		),
 		'L' => array(
 			'cells' => 3,
 			'count' => 1
 		),
-		'D' => array(
+		'D1' => array(
 			'cells' => 1,
-			'count' => 2
+			'count' => 1
+		),
+		'D2' => array(
+			'cells' => 1,
+			'count' => 1
 		)
 	);
 
@@ -36,22 +38,6 @@ class Battleships {
 
 	function __construct() {
 		$this->generateBoard();
-	}
-
-
-	/**
-	 * Generates the board and puts ships on it.
-	 */
-	private function generateBoard() {
-		$this->grid = array_fill(0, self::SIZE, array_fill(0, self::SIZE, 0));
-
-		foreach( self::SHIPS as $ship => $props ) {
-			$i = 0;
-			while ( $i < $props['count'] ) {
-				$this->placeShip($props['cells'], $ship);
-				$i++;
-			}
-		}
 	}
 
 
@@ -96,7 +82,7 @@ class Battleships {
 						$return .= '<path d="M' . ($x-1) . ',' . $y . ' ' . ($x+1) . ',' . $y . ' ' . ($x+1) . ',' . ($y+3) . ' ' . $x . ',' . ($y+3) . ' ' . $x . ',' . ($y+1) . ' ' . ($x-1) . ',' . ($y+1) . ' Z" class="ship-L"></path>';
 					}
 					break;
-				case 'D':
+				case 'D1' || 'D2':
 					$return .= '<path d="M' . $x . ',' . $y . ' ' . ($x+1) . ',' . $y . ' ' . ($x+1) . ',' . ($y+1) . ' ' . $x . ',' . ($y+1) . ' Z" class="ship-D"></path>';
 					break;
 			}
@@ -107,23 +93,61 @@ class Battleships {
 
 
 	/**
-	 * Places a ship on a board.
-	 *
-	 * @param $shipSize
-	 * @param $shipMarker
+	 * Generates the board and ships.
 	 */
-	private function placeShip($shipSize, $shipMarker) {
-		$shipPlacement = $this->findPlaceOnBoard($shipSize);
+	private function generateBoard() {
+		$this->resetBoard();
+		$this->generateShips();
+	}
 
-		// If the generated position is not suitable - try again until succeed.
-		$count = 0;
-		while ( $count < 10000 && false === $this->checkForSafePlacement($shipSize, $shipPlacement["start_x"], $shipPlacement["start_y"], $shipPlacement["orientation"])) {
-			$shipPlacement = $this->findPlaceOnBoard($shipSize);
-			$count++;
+
+	/**
+	 * Resets the board and ships.
+	 */
+	private function resetBoard() {
+		$this->grid = array_fill(0, self::SIZE, array_fill(0, self::SIZE, 0));
+		$this->ships = array();
+	}
+
+
+	/**
+	 * Generates ships and puts them on the board if possible.
+	 */
+	private function generateShips() {
+		// Iterate through the types of ships.
+		foreach( self::SHIPS as $ship => $props ) {
+			$shipSize = $props['cells'];
+			$shipMarker = $ship;
+			$i = 0;
+
+			// Try to place each ship a certain number of times.
+			while ( $i < $props['count'] ) {
+				$shipPlacement = $this->findPlaceOnBoard($shipSize);
+
+				// Set the maximum number of tries for placing a ship.
+				$count = 0;
+				$maxCount = 100;
+
+				// If the generated position is not suitable - try again until succeed.
+				while ( !$this->checkForSafePlacement($shipMarker, $shipSize, $shipPlacement["start_x"], $shipPlacement["start_y"], $shipPlacement["orientation"])) {
+					if ( $count > $maxCount ) {
+						// If we exceed the allowed number of tries - let's regenerate all ships from the start once again.
+						$this->resetBoard();
+						$this->generateShips();
+						return;
+					} else {
+						// If the allowed number of tries isn't exceeded - try to find a place on the board.
+						$shipPlacement = $this->findPlaceOnBoard($shipSize);
+						$count++;
+					}
+				}
+
+				// Once successfully generated, put the ship on the board.
+				$this->occupySpaceOnBoard($shipSize, $shipMarker, $shipPlacement["start_x"], $shipPlacement["start_y"], $shipPlacement["orientation"], $i);
+
+				$i++;
+			}
 		}
-
-		// Once successfully generated, put the ship on the board.
-		$this->occupySpaceOnBoard($shipSize, $shipMarker, $shipPlacement["start_x"], $shipPlacement["start_y"], $shipPlacement["orientation"]);
 	}
 
 
@@ -163,20 +187,20 @@ class Battleships {
 	 * @param $startY
 	 * @param $orientation
 	 */
-	private function occupySpaceOnBoard($shipSize, $shipMarker, $startX, $startY, $orientation) {
+	private function occupySpaceOnBoard($shipSize, $shipMarker, $startX, $startY, $orientation, $count) {
 		if ( $orientation == 0 || $orientation == 2 ) {
 			for ($i = 0; $i < $shipSize; $i++) {
-				$this->grid[$startY][$startX + $i] = $shipMarker;
+				$this->grid[$startY][$startX + $i] = $shipMarker . $count;
 			}
 		} else {
 			for ($i = 0; $i < $shipSize; $i++) {
-				$this->grid[$startY + $i][$startX] = $shipMarker;
+				$this->grid[$startY + $i][$startX] = $shipMarker . $count;
 			}
 		}
 
 		if ( $shipMarker === 'L' ) {
 			$l = $this->additionalCellForL($startX, $startY, $orientation);
-			$this->grid[$l['y']][$l['x']] = $shipMarker;
+			$this->grid[$l['y']][$l['x']] = $shipMarker . $count;
 		}
 
 		$this->ships[] = array('x' => $startX, 'y' => $startY, 'orient' => $orientation, 'type' => $shipMarker);
@@ -223,7 +247,7 @@ class Battleships {
 	 * @return bool
 	 */
 	private function withinBoard($x, $y) {
-		if ( $x < 0 || $x >= self::SIZE ||  $y < 0 || $y >= self::SIZE ) {
+		if ( $x < 0 || $x >= self::SIZE || $y < 0 || $y >= self::SIZE ) {
 			return false;
 		}
 		return true;
@@ -241,65 +265,47 @@ class Battleships {
 	 *
 	 * @return bool
 	 */
-	private function checkForSafePlacement($shipSize, $startX, $startY, $orientation) {
-		$firstX = $lastX = $firstY = $lastY = 0;
+	private function checkForSafePlacement($shipMarker, $shipSize, $startX, $startY, $orientation) {
 
 		// Use params based on ship's orientation
-		switch ($orientation) {
-			case 0:
-				$firstX = -1;
-				$lastX   = $shipSize;
-				$firstY = -1;
-				$lastY   = $startY;
-				break;
-			case 1:
-				$firstX = -1;
-				$lastX   = $startX;
-				$firstY = -1;
-				$lastY   = $shipSize;
-				break;
-			case 2:
-				$firstX = -1;
-				$lastX   = $shipSize;
-				$firstY = -1;
-				$lastY   = $startY;
-				break;
-			case 3:
-				$firstX = -1;
-				$lastX   = $shipSize;
-				$firstY = -1;
-				$lastY   = $startY;
-				break;
+		if ( $orientation === 0 || $orientation === 2 ) {
+			$lastX  = $shipSize;
+			$lastY  = 1;
+		} else {
+			$lastX  = 1;
+			$lastY  = $shipSize;
 		}
 
 		// Check if we can actually place a ship here
-		for ($i = $firstX; $i <= $lastX; $i++) {
-			for ( $k = $firstY; $k <= $lastY; $k++ ) {
-				if ( !$this->withinBoard($startY + $k, $startX + $i) ) {
+		for ($i = -1; $i <= $lastY; $i++) {
+			for ( $k = -1; $k <= $lastX; $k++ ) {
+				if ( !$this->withinBoard($startY + $i, $startX + $k) ) {
 					// If outside the board - skip the loop
 					continue;
 				}
-				if ($this->grid[$startY + $k][$startX + $i] !== self::WATER) {
+				if ($this->grid[$startY + $i][$startX + $k] !== self::WATER) {
 					// If the cell contains anything except water - it's not acceptable
 					return false;
 				}
 			}
 		}
 
-		// Get coordinates of the additional cell in L-shaped ship and make sure it's within the board
-		$l = $this->additionalCellForL($startX, $startY, $orientation);
-		if ( !$this->withinBoard($l['x'], $l['y']) ) {
-			return false;
-		}
+		if ( $shipMarker === 'L' ) {
+			// Get coordinates of the additional cell in L-shaped ship and make sure it's within the board
+			$l = $this->additionalCellForL($startX, $startY, $orientation);
+			if ( !$this->withinBoard($l['x'], $l['y']) ) {
+				return false;
+			}
 
-		// Check if we can place an additional cell for an L-shaped ship here
-		for ($y = -1; $y <= 1; $y++) {
-			for ( $x = -1; $x <= 1; $x++ ) {
-				if ( !$this->withinBoard($startY + $y, $startX + $i) ) {
-					continue;
-				}
-				if ($this->grid[$l['y'] + $y][$l['x'] + $x] !== self::WATER) {
-					return false;
+			// Check if we can place an additional cell for an L-shaped ship here
+			for ($y = -1; $y <= 1; $y++) {
+				for ( $x = -1; $x <= 1; $x++ ) {
+					if ( !$this->withinBoard($l['y'] + $y, $l['x'] + $x) ) {
+						continue;
+					}
+					if ($this->grid[$l['y'] + $y][$l['x'] + $x] !== self::WATER) {
+						return false;
+					}
 				}
 			}
 		}

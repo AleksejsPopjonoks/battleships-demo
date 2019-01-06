@@ -43,16 +43,10 @@
 				totalCells++;
 
 				if ( ship !== WATER ) {
-					if ( ship === 'D' && ships['D'] ) {
-						ships['D1'] = [];
-						ships['D1'].push([row,index]);
-						defCells[row][index] = 'D1';
-					} else {
-						if ( !ships[ship] ) {
-							ships[ship] = [];
-						}
-						ships[ship][ships[ship].length] = [row,index];
+					if ( !ships[ship] ) {
+						ships[ship] = [];
 					}
+					ships[ship][ships[ship].length] = [row,index];
 				}
 			});
 		});
